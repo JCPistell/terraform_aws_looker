@@ -62,22 +62,28 @@ EOT
 
 # Setting up the JMX directory
 
-sudo mkdir /home/looker/.lookerjmx
+# download the prometheus jmx java agent and config file
+sudo curl https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.13.0/jmx_prometheus_javaagent-0.13.0.jar -o /home/looker/looker/jmx_prom_javaagent.jar
+sudo curl https://raw.githubusercontent.com/JCPistell/customer-scripts/master/prometheus/looker_jmx.yml -O
+sudo chown looker:looker /home/looker/looker/jmx_prometheus_javaagent.jar
+sudo chown looker:looker /home/looker/looker/looker_jmx.yml
 
-cat << EOT | sudo tee -a /home/looker/.lookerjmx/jmxremote.access
-monitorRole    readonly
-controlRole    readwrite \
-               create javax.management.monitor.*,javax.management.timer.* \
-               unregister
-EOT
+# sudo mkdir /home/looker/.lookerjmx
 
-cat << EOT | sudo tee -a /home/looker/.lookerjmx/jmxremote.password
-monitorRole    $LOOKER_PASSWORD
-controlRole    $LOOKER_PASSWORD
-EOT
+# cat << EOT | sudo tee -a /home/looker/.lookerjmx/jmxremote.access
+# monitorRole    readonly
+# controlRole    readwrite \
+#                create javax.management.monitor.*,javax.management.timer.* \
+#                unregister
+# EOT
 
-sudo chown -R looker:looker /home/looker/.lookerjmx
-sudo chmod 400 /home/looker/.lookerjmx/jmxremote.*
+# cat << EOT | sudo tee -a /home/looker/.lookerjmx/jmxremote.password
+# monitorRole    $LOOKER_PASSWORD
+# controlRole    $LOOKER_PASSWORD
+# EOT
+
+# sudo chown -R looker:looker /home/looker/.lookerjmx
+# sudo chmod 400 /home/looker/.lookerjmx/jmxremote.*
 
 # Looker won't automatically create the deploy_keys directory
 sudo mkdir /home/looker/looker/deploy_keys
