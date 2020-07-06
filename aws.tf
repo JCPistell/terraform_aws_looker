@@ -233,13 +233,13 @@ resource "aws_acm_certificate" "dev-cert" {
   }
 }
 
-resource "aws_acm_certificate" "prod-cert" {
-  domain_name = "jcp-prod.${var.domain}"
-  validation_method = "DNS"
-  lifecycle {
-    create_before_destroy = true
-  }
-}
+# resource "aws_acm_certificate" "prod-cert" {
+#   domain_name = "jcp-prod.${var.domain}"
+#   validation_method = "DNS"
+#   lifecycle {
+#     create_before_destroy = true
+#   }
+# }
 
 resource "aws_route53_record" "dev-cert_validation" {
   name = aws_acm_certificate.dev-cert.domain_validation_options.0.resource_record_name
@@ -249,23 +249,23 @@ resource "aws_route53_record" "dev-cert_validation" {
   ttl = 60
 }
 
-resource "aws_route53_record" "prod-cert_validation" {
-  name = aws_acm_certificate.prod-cert.domain_validation_options.0.resource_record_name
-  type = aws_acm_certificate.prod-cert.domain_validation_options.0.resource_record_type
-  zone_id = data.aws_route53_zone.zone.zone_id
-  records = ["${aws_acm_certificate.prod-cert.domain_validation_options.0.resource_record_value}"]
-  ttl = 60
-}
+# resource "aws_route53_record" "prod-cert_validation" {
+#   name = aws_acm_certificate.prod-cert.domain_validation_options.0.resource_record_name
+#   type = aws_acm_certificate.prod-cert.domain_validation_options.0.resource_record_type
+#   zone_id = data.aws_route53_zone.zone.zone_id
+#   records = ["${aws_acm_certificate.prod-cert.domain_validation_options.0.resource_record_value}"]
+#   ttl = 60
+# }
 
 resource "aws_acm_certificate_validation" "dev-cert" {
   certificate_arn = aws_acm_certificate.dev-cert.arn
   validation_record_fqdns = ["${aws_route53_record.dev-cert_validation.fqdn}"]
 }
 
-resource "aws_acm_certificate_validation" "prod-cert" {
-  certificate_arn = aws_acm_certificate.prod-cert.arn
-  validation_record_fqdns = ["${aws_route53_record.prod-cert_validation.fqdn}"]
-}
+# resource "aws_acm_certificate_validation" "prod-cert" {
+#   certificate_arn = aws_acm_certificate.prod-cert.arn
+#   validation_record_fqdns = ["${aws_route53_record.prod-cert_validation.fqdn}"]
+# }
 
 # Create a load balancer to route traffic to the instances
 resource "aws_elb" "dev-looker-elb" {
@@ -311,48 +311,48 @@ resource "aws_elb" "dev-looker-elb" {
   }
 }
 
-resource "aws_elb" "prod-looker-elb" {
-  name                        = "looker-elb-prod"
-  subnets                     = ["${aws_subnet.subnet-looker.0.id}"]
-  internal                    = "false"
-  security_groups             = ["${aws_security_group.ingress-all-looker.id}"]
-  instances                   = ["${aws_instance.looker-instance.1.id}"]
-  cross_zone_load_balancing   = true
-  idle_timeout                = 3600
-  connection_draining         = false
-  connection_draining_timeout = 300
+# resource "aws_elb" "prod-looker-elb" {
+#   name                        = "looker-elb-prod"
+#   subnets                     = ["${aws_subnet.subnet-looker.0.id}"]
+#   internal                    = "false"
+#   security_groups             = ["${aws_security_group.ingress-all-looker.id}"]
+#   instances                   = ["${aws_instance.looker-instance.1.id}"]
+#   cross_zone_load_balancing   = true
+#   idle_timeout                = 3600
+#   connection_draining         = false
+#   connection_draining_timeout = 300
 
-  listener {
-    instance_port      = "9999"
-    instance_protocol  = "https"
-    lb_port            = "443"
-    lb_protocol        = "https"
-    ssl_certificate_id = aws_acm_certificate.prod-cert.arn
-  }
+#   listener {
+#     instance_port      = "9999"
+#     instance_protocol  = "https"
+#     lb_port            = "443"
+#     lb_protocol        = "https"
+#     ssl_certificate_id = aws_acm_certificate.prod-cert.arn
+#   }
 
-  listener {
-    instance_port      = "19999"
-    instance_protocol  = "https"
-    lb_port            = "19999"
-    lb_protocol        = "https"
-    ssl_certificate_id = aws_acm_certificate.prod-cert.arn
-  }
+#   listener {
+#     instance_port      = "19999"
+#     instance_protocol  = "https"
+#     lb_port            = "19999"
+#     lb_protocol        = "https"
+#     ssl_certificate_id = aws_acm_certificate.prod-cert.arn
+#   }
 
-  listener {
-    instance_port      = "9910"
-    instance_protocol  = "http"
-    lb_port            = "9910"
-    lb_protocol        = "http"
-  }
+#   listener {
+#     instance_port      = "9910"
+#     instance_protocol  = "http"
+#     lb_port            = "9910"
+#     lb_protocol        = "http"
+#   }
 
-  health_check {
-    target              = "https:9999/alive"
-    interval            = 30
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-  }
-}
+#   health_check {
+#     target              = "https:9999/alive"
+#     interval            = 30
+#     healthy_threshold   = 2
+#     unhealthy_threshold = 2
+#     timeout             = 5
+#   }
+# }
 
 resource "aws_route53_record" "dev-looker-dns" {
   zone_id = data.aws_route53_zone.zone.zone_id
@@ -366,17 +366,17 @@ resource "aws_route53_record" "dev-looker-dns" {
   }
 }
 
-resource "aws_route53_record" "prod-looker-dns" {
-  zone_id = data.aws_route53_zone.zone.zone_id
-  name = "jcp-prod.lookersandbox.com"
-  type = "A"
+# resource "aws_route53_record" "prod-looker-dns" {
+#   zone_id = data.aws_route53_zone.zone.zone_id
+#   name = "jcp-prod.lookersandbox.com"
+#   type = "A"
 
-  alias {
-    name = aws_elb.prod-looker-elb.dns_name
-    zone_id = aws_elb.prod-looker-elb.zone_id
-    evaluate_target_health = false
-  }
-}
+#   alias {
+#     name = aws_elb.prod-looker-elb.dns_name
+#     zone_id = aws_elb.prod-looker-elb.zone_id
+#     evaluate_target_health = false
+#   }
+# }
 
 # Generate a random Looker password
 resource "random_string" "password" {
@@ -390,5 +390,5 @@ resource "random_string" "password" {
 }
 
 output "Details" {
-  value = "\n\nLooker password is ${random_string.password.result}\n\nStarted DEV\nhttps://${aws_eip.ip-looker-env.0.public_dns}:9999\nssh -i ~/.ssh/${var.key} ubuntu@${aws_eip.ip-looker-env.0.public_dns}\n\nStarted PROD\nhttps://${aws_eip.ip-looker-env.1.public_dns}:9999\nssh -i ~/.ssh/${var.key} ubuntu@${aws_eip.ip-looker-env.1.public_dns}\n\nYou will need to wait a few minutes for the instances to become available.\n\n"
+  value = "\n\nLooker password is ${random_string.password.result}\n\nStarted DEV\nhttps://${aws_eip.ip-looker-env.0.public_dns}:9999\nssh -i ~/.ssh/${var.key} ubuntu@${aws_eip.ip-looker-env.0.public_dns}\n\nYou will need to wait a few minutes for the instances to become available.\n\n"
 }
