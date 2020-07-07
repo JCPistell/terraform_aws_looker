@@ -108,8 +108,8 @@ resource "aws_security_group" "ingress-all-looker" {
     cidr_blocks = [
       "0.0.0.0/0" # (open to the world)
     ]
-    from_port = 9910
-    to_port = 9910
+    from_port = 9810
+    to_port = 9810
     protocol = "tcp"
   }
 

@@ -104,3 +104,7 @@ sudo chown looker:looker looker
 sudo systemctl daemon-reload
 sudo systemctl enable looker.service
 sudo systemctl start looker
+
+sleep 10
+
+java -jar jmx_prometheus_httpserver.jar 9810 looker_jmx.yml
