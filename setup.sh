@@ -15,9 +15,15 @@ sudo apt-get install mysql-server -y
 sudo mysql -u root -e "CREATE DATABASE looker; CREATE USER 'looker'@'localhost' IDENTIFIED BY '$LOOKER_PASSWORD'; GRANT ALL PRIVILEGES ON looker.* TO 'looker'@'localhost'; CREATE DATABASE looker_tmp; GRANT ALL PRIVILEGES ON looker_tmp.* TO 'looker'@'localhost';"
 
 # Install the Looker systemd startup script
-curl https://raw.githubusercontent.com/looker/customer-scripts/master/startup_scripts/systemd/looker.service -O
+curl https://raw.githubusercontent.com/JCPistell/customer-scripts/master/startup_scripts/systemd/looker.service -O
 sudo mv looker.service /etc/systemd/system/looker.service
 sudo chmod 664 /etc/systemd/system/looker.service
+
+# Install the Prom JMX systemd startup script
+curl https://raw.githubusercontent.com/JCPistell/customer-scripts/master/startup_scripts/systemd/prom-jmx.service -O
+sudo mv prom-jmx.service /etc/systemd/system/prom-jmx.service
+sudo chmod 664 /etc/systemd/system/prom-jmx.service
+
 
 # Configure some important environment settings
 cat <<EOT | sudo tee -a /etc/sysctl.conf
@@ -103,8 +109,7 @@ sudo chown looker:looker looker
 # Start Looker
 sudo systemctl daemon-reload
 sudo systemctl enable looker.service
+sudo systemctl enable prom-jmx.service
 sudo systemctl start looker
-
 sleep 10
-
-java -jar jmx_prometheus_httpserver.jar 9810 looker_jmx.yml
+sudo systemctl start prom-jmx
