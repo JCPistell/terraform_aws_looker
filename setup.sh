@@ -101,10 +101,14 @@ sudo mkdir /home/looker/looker/deploy_keys
 echo "LOOKERARGS=\"\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
 
 sudo chown -R looker:looker lookerstart.cfg looker.jar looker-dependencies.jar provision.yml deploy_keys
-sudo curl https://raw.githubusercontent.com/JCPistell/customer-scripts/master/startup_scripts/looker -O
-sudo chmod 0750 looker
 
-sudo chown looker:looker looker
+# download the startup scripts
+sudo curl https://raw.githubusercontent.com/JCPistell/customer-scripts/master/startup_scripts/looker -O
+sudo curl https://raw.githubusercontent.com/JCPistell/customer-scripts/master/startup_scripts/prom-jmx -O
+sudo chmod 0750 looker
+sudo chmod 0750 prom-jmx
+
+sudo chown looker:looker looker prom-jmx
 
 # Start Looker
 sudo systemctl daemon-reload
