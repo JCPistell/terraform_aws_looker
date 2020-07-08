@@ -296,10 +296,11 @@ resource "aws_elb" "dev-looker-elb" {
   }
 
   listener {
-    instance_port      = "9910"
+    instance_port      = "9810"
     instance_protocol  = "http"
-    lb_port            = "9910"
-    lb_protocol        = "http"
+    lb_port            = "9810"
+    lb_protocol        = "https"
+    ssl_certificate_id = aws_acm_certificate.dev-cert.arn
   }
 
   health_check {
@@ -339,10 +340,11 @@ resource "aws_elb" "dev-looker-elb" {
 #   }
 
 #   listener {
-#     instance_port      = "9910"
+#     instance_port      = "9810"
 #     instance_protocol  = "http"
-#     lb_port            = "9910"
-#     lb_protocol        = "http"
+#     lb_port            = "9810"
+#     lb_protocol        = "https"
+#     ssl_certificate_id = aws_acm_certificate.prod-cert.arn
 #   }
 
 #   health_check {
