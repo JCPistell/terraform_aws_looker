@@ -64,6 +64,28 @@ user:
   password: "$LOOKER_PASSWORD"
 EOT
 
+
+# Conditionally create the database credentials file
+if [ $DB_SERVER -ne 0 ]; then
+cat <<EOT | sudo tee -a /home/looker/looker/looker-db.yml
+host: $DB_SERVER
+username: $DB_USER
+password: $DB_PASSWORD
+database: $DB_USER
+dialect: mysql
+port: 3306
+EOT
+fi
+
+# Conditionally mount the shared file system
+if [ $NODE_COUNT -ne 0]; then
+sudo mkdir -p /mnt/lookerfiles
+echo "$SHARED_STORAGE_SERVER:/ /mnt/lookerfiles nfs nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport" | sudo tee -a /etc/fstab
+sudo mount -a
+sudo chown looker:looker /mnt/lookerfiles
+cat /proc/mounts | grep looker
+fi
+
 # download the prometheus jmx http server and config file
 sudo curl https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_httpserver/0.13.0/jmx_prometheus_httpserver-0.13.0-jar-with-dependencies.jar -o jmx_prometheus_httpserver.jar
 sudo curl https://raw.githubusercontent.com/JCPistell/customer-scripts/master/prometheus/looker_jmx.yml -O
@@ -96,7 +118,15 @@ sudo chmod 400 /home/looker/.lookerjmx/jmxremote.*
 # Looker won't automatically create the deploy_keys directory
 sudo mkdir /home/looker/looker/deploy_keys
 
-echo "LOOKERARGS=\"\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
+# Modify LookerArgs appropriately based on db and cluster options
+if [ $DB_SERVER -ne 0 && $NODE_COUNT -ne 0 ]; then
+  export IP=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
+  echo "LOOKERARGS=\"--no-daemonize -d /home/looker/looker/looker-db.yml --clustered -H $IP --shared-storage-dir /mnt/lookerfiles\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
+elif [ $DB_SERVER -ne 0 && $NODE_COUNT -eq 0 ]; then
+  echo "LOOKERARGS=\"--no-daemonize -d /home/looker/looker/looker-db.yml\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
+else
+  echo "LOOKERARGS=\"\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
+fi
 
 sudo chown -R looker:looker lookerstart.cfg looker.jar looker-dependencies.jar provision.yml deploy_keys
 
@@ -112,6 +142,6 @@ sudo chown looker:looker looker prom-jmx
 sudo systemctl daemon-reload
 sudo systemctl enable looker.service
 sudo systemctl enable prom-jmx.service
-sudo systemctl start looker
+if [ $NODE_COUNT -eq 0 ]; then sudo systemctl start looker; else sleep 300 && sudo systemctl start looker; fi
 sleep 10
 sudo systemctl start prom-jmx
