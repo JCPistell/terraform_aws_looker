@@ -36,6 +36,9 @@ resource "aws_vpc" "looker-env" {
   cidr_block = "10.0.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support = true
+  tags = {
+    owner = var.tag_email
+  }
 }
 
 # Create elastic IP addresses for our ec2 instances
@@ -44,6 +47,9 @@ resource "aws_eip" "ip-looker-env" {
   count      = var.instances
   instance   = element(aws_instance.looker-instance.*.id, count.index)
   vpc        = true
+  tags = {
+    owner = var.tag_email
+  }
 }
 
 # Get a list of all availability zones in this region, we need it to create subnets
@@ -56,12 +62,18 @@ resource "aws_subnet" "subnet-looker" {
   cidr_block              = "10.0.${length(data.aws_availability_zones.available.names) + count.index}.0/24"
   map_public_ip_on_launch = true
   availability_zone       = element(data.aws_availability_zones.available.names, count.index)
+  tags = {
+    owner = var.tag_email
+  }
 }
 
 # Create the inbound security rules
 resource "aws_security_group" "ingress-all-looker" {
   name = "allow-all-sg"
   vpc_id = aws_vpc.looker-env.id
+  tags = {
+    owner = var.tag_email
+  }
 
   # Looker cluster communication
   ingress {
@@ -145,6 +157,9 @@ resource "aws_security_group" "ingress-all-looker" {
 resource "aws_key_pair" "key" {
   key_name   = "key${aws_vpc.looker-env.id}"
   public_key = file("~/.ssh/${var.key}.pub") # this file must be an existing public key!
+  tags = {
+    owner = var.tag_email
+  }
 }
 
 # Create ec2 instances for the Looker application servers
@@ -156,6 +171,9 @@ resource "aws_instance" "looker-instance" {
   subnet_id = aws_subnet.subnet-looker.0.id
   associate_public_ip_address = true
   key_name = aws_key_pair.key.key_name
+  tags = {
+    owner = var.tag_email
+  }
 
   root_block_device {
     volume_type           = "gp2"
@@ -205,6 +223,9 @@ resource "aws_instance" "looker-instance" {
 # Create an internet gateway, a routing table, and route associations
 resource "aws_internet_gateway" "looker-env-gw" {
   vpc_id = aws_vpc.looker-env.id
+  tags = {
+    owner = var.tag_email
+  }
 }
 
 resource "aws_route_table" "route-table-looker-env" {
@@ -212,6 +233,9 @@ resource "aws_route_table" "route-table-looker-env" {
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.looker-env-gw.id
+  }
+  tags = {
+    owner = var.tag_email
   }
 }
 
@@ -228,18 +252,13 @@ data "aws_route53_zone" "zone" {
 resource "aws_acm_certificate" "dev-cert" {
   domain_name = "jcp-dev.${var.domain}"
   validation_method = "DNS"
+  tags = {
+    owner = var.tag_email
+  }
   lifecycle {
     create_before_destroy = true
   }
 }
-
-# resource "aws_acm_certificate" "prod-cert" {
-#   domain_name = "jcp-prod.${var.domain}"
-#   validation_method = "DNS"
-#   lifecycle {
-#     create_before_destroy = true
-#   }
-# }
 
 resource "aws_route53_record" "dev-cert_validation" {
   name = aws_acm_certificate.dev-cert.domain_validation_options.0.resource_record_name
@@ -249,23 +268,10 @@ resource "aws_route53_record" "dev-cert_validation" {
   ttl = 60
 }
 
-# resource "aws_route53_record" "prod-cert_validation" {
-#   name = aws_acm_certificate.prod-cert.domain_validation_options.0.resource_record_name
-#   type = aws_acm_certificate.prod-cert.domain_validation_options.0.resource_record_type
-#   zone_id = data.aws_route53_zone.zone.zone_id
-#   records = ["${aws_acm_certificate.prod-cert.domain_validation_options.0.resource_record_value}"]
-#   ttl = 60
-# }
-
 resource "aws_acm_certificate_validation" "dev-cert" {
   certificate_arn = aws_acm_certificate.dev-cert.arn
   validation_record_fqdns = ["${aws_route53_record.dev-cert_validation.fqdn}"]
 }
-
-# resource "aws_acm_certificate_validation" "prod-cert" {
-#   certificate_arn = aws_acm_certificate.prod-cert.arn
-#   validation_record_fqdns = ["${aws_route53_record.prod-cert_validation.fqdn}"]
-# }
 
 # Create a load balancer to route traffic to the instances
 resource "aws_elb" "dev-looker-elb" {
@@ -278,6 +284,9 @@ resource "aws_elb" "dev-looker-elb" {
   idle_timeout                = 3600
   connection_draining         = false
   connection_draining_timeout = 300
+  tags = {
+    owner = var.tag_email
+  }
 
   listener {
     instance_port      = "9999"
@@ -299,8 +308,7 @@ resource "aws_elb" "dev-looker-elb" {
     instance_port      = "9810"
     instance_protocol  = "http"
     lb_port            = "9810"
-    lb_protocol        = "https"
-    ssl_certificate_id = aws_acm_certificate.dev-cert.arn
+    lb_protocol        = "http"
   }
 
   health_check {
@@ -311,50 +319,6 @@ resource "aws_elb" "dev-looker-elb" {
     timeout             = 5
   }
 }
-
-# resource "aws_elb" "prod-looker-elb" {
-#   name                        = "looker-elb-prod"
-#   subnets                     = ["${aws_subnet.subnet-looker.0.id}"]
-#   internal                    = "false"
-#   security_groups             = ["${aws_security_group.ingress-all-looker.id}"]
-#   instances                   = ["${aws_instance.looker-instance.1.id}"]
-#   cross_zone_load_balancing   = true
-#   idle_timeout                = 3600
-#   connection_draining         = false
-#   connection_draining_timeout = 300
-
-#   listener {
-#     instance_port      = "9999"
-#     instance_protocol  = "https"
-#     lb_port            = "443"
-#     lb_protocol        = "https"
-#     ssl_certificate_id = aws_acm_certificate.prod-cert.arn
-#   }
-
-#   listener {
-#     instance_port      = "19999"
-#     instance_protocol  = "https"
-#     lb_port            = "19999"
-#     lb_protocol        = "https"
-#     ssl_certificate_id = aws_acm_certificate.prod-cert.arn
-#   }
-
-#   listener {
-#     instance_port      = "9810"
-#     instance_protocol  = "http"
-#     lb_port            = "9810"
-#     lb_protocol        = "https"
-#     ssl_certificate_id = aws_acm_certificate.prod-cert.arn
-#   }
-
-#   health_check {
-#     target              = "https:9999/alive"
-#     interval            = 30
-#     healthy_threshold   = 2
-#     unhealthy_threshold = 2
-#     timeout             = 5
-#   }
-# }
 
 resource "aws_route53_record" "dev-looker-dns" {
   zone_id = data.aws_route53_zone.zone.zone_id
@@ -367,18 +331,6 @@ resource "aws_route53_record" "dev-looker-dns" {
     evaluate_target_health = false
   }
 }
-
-# resource "aws_route53_record" "prod-looker-dns" {
-#   zone_id = data.aws_route53_zone.zone.zone_id
-#   name = "jcp-prod.lookersandbox.com"
-#   type = "A"
-
-#   alias {
-#     name = aws_elb.prod-looker-elb.dns_name
-#     zone_id = aws_elb.prod-looker-elb.zone_id
-#     evaluate_target_health = false
-#   }
-# }
 
 # Generate a random Looker password
 resource "random_string" "password" {

@@ -11,8 +11,6 @@ sudo ln -s /usr/bin/chromium-browser /usr/bin/chromium
 sudo apt-get install openjdk-8-jdk -y
 sudo apt-get install nfs-common -y
 sudo apt-get install jq -y
-sudo apt-get install mysql-server -y
-sudo mysql -u root -e "CREATE DATABASE looker; CREATE USER 'looker'@'localhost' IDENTIFIED BY '$LOOKER_PASSWORD'; GRANT ALL PRIVILEGES ON looker.* TO 'looker'@'localhost'; CREATE DATABASE looker_tmp; GRANT ALL PRIVILEGES ON looker_tmp.* TO 'looker'@'localhost';"
 
 # Install the Looker systemd startup script
 curl https://raw.githubusercontent.com/JCPistell/customer-scripts/master/startup_scripts/systemd/looker.service -O
