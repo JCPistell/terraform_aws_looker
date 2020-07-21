@@ -43,9 +43,9 @@ resource "aws_vpc" "looker-env" {
 
 # Create elastic IP addresses for our ec2 instances
 resource "aws_eip" "ip-looker-env" {
-  depends_on = [data.aws_instance.looker-instance-select]
+  depends_on = [data.aws_instances.looker-instance-select]
   count      = var.instances
-  instance   = element(data.aws_instance.looker-instance-select.*.id, count.index)
+  instance   = data.aws_instances.looker-instance-select.ids[count.index]
   vpc        = true
   tags = {
     owner = var.tag_email
@@ -489,14 +489,13 @@ resource "aws_instance" "looker-instance-cluster" {
 }
 
 # Create a data point so elb can use the same variable for each possible instance
-data "aws_instance" "looker-instance-select" {
+data "aws_instances" "looker-instance-select" {
   instance_tags = {
     owner = var.tag_email
     name = local.instance_name
   }
   depends_on = [aws_instance.looker-instance, aws_instance.looker-instance-mysql, aws_instance.looker-instance-cluster]
 }
-
 
 # Create an internet gateway, a routing table, and route associations
 resource "aws_internet_gateway" "looker-env-gw" {
@@ -557,7 +556,7 @@ resource "aws_elb" "dev-looker-elb" {
   subnets                     = ["${aws_subnet.subnet-looker.0.id}"]
   internal                    = "false"
   security_groups             = ["${aws_security_group.ingress-all-looker.id}"]
-  instances                   = data.aws_instance.looker-instance-select[*].id
+  instances                   = data.aws_instances.looker-instance-select.ids
   cross_zone_load_balancing   = true
   idle_timeout                = 3600
   connection_draining         = false
