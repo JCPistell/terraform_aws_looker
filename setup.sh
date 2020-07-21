@@ -66,7 +66,7 @@ EOT
 
 
 # Conditionally create the database credentials file
-if [ $DB_SERVER -ne 0 ]; then
+if [[ $EXTERNAL_DB == 'yes' ]]; then
 cat <<EOT | sudo tee -a /home/looker/looker/looker-db.yml
 host: $DB_SERVER
 username: $DB_USER
@@ -78,7 +78,7 @@ EOT
 fi
 
 # Conditionally mount the shared file system
-if [ $NODE_COUNT -ne 0]; then
+if [[ $CLUSTERED == 'yes' ]]; then
 sudo mkdir -p /mnt/lookerfiles
 echo "$SHARED_STORAGE_SERVER:/ /mnt/lookerfiles nfs nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport" | sudo tee -a /etc/fstab
 sudo mount -a
@@ -119,11 +119,11 @@ sudo chmod 400 /home/looker/.lookerjmx/jmxremote.*
 sudo mkdir /home/looker/looker/deploy_keys
 
 # Modify LookerArgs appropriately based on db and cluster options
-if [ $DB_SERVER -ne 0 && $NODE_COUNT -ne 0 ]; then
+if [[ $EXTERNAL_DB == 'yes' && $CLUSTERED == 'yes' ]]; then
   export IP=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
-  echo "LOOKERARGS=\"--no-daemonize -d /home/looker/looker/looker-db.yml --clustered -H $IP --shared-storage-dir /mnt/lookerfiles\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
-elif [ $DB_SERVER -ne 0 && $NODE_COUNT -eq 0 ]; then
-  echo "LOOKERARGS=\"--no-daemonize -d /home/looker/looker/looker-db.yml\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
+  echo "LOOKERARGS=\"-d /home/looker/looker/looker-db.yml --clustered -H $IP --shared-storage-dir /mnt/lookerfiles\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
+elif [[ $EXTERNAL_DB == 'yes' && $CLUSTERED != 'yes' ]]; then
+  echo "LOOKERARGS=\"-d /home/looker/looker/looker-db.yml\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
 else
   echo "LOOKERARGS=\"\"" | sudo tee -a /home/looker/looker/lookerstart.cfg
 fi
@@ -145,3 +145,6 @@ sudo systemctl enable prom-jmx.service
 if [ $NODE_COUNT -eq 0 ]; then sudo systemctl start looker; else sleep 300 && sudo systemctl start looker; fi
 sleep 10
 sudo systemctl start prom-jmx
+
+echo $EXTERNAL_DB
+echo $CLUSTERED

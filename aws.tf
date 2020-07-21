@@ -352,8 +352,10 @@ resource "aws_instance" "looker-instance" {
       "export LOOKER_PASSWORD=${random_string.password.result}",
       "export HOST_URL=${self.public_dns}",
 
-      "export DB_SERVER=0",
-      "export NODE_COUNT=0",
+      "export EXTERNAL_DB=no",
+
+      "export CLUSTERED=no",
+      "export NODE_COUNT=${count.index}",
 
       "chmod +x /tmp/${var.provisioning_script}",
       "/bin/bash /tmp/${var.provisioning_script}",
@@ -409,10 +411,13 @@ resource "aws_instance" "looker-instance-mysql" {
       "export LOOKER_PASSWORD=${random_string.password.result}",
       "export HOST_URL=${self.public_dns}",
 
+      "export EXTERNAL_DB=yes",
       "export DB_SERVER=${aws_db_instance.looker-app-db[0].address}",
       "export DB_USER=looker",
       "export DB_PASSWORD=\"${random_string.password.result}\"",
-      "export NODE_COUNT=0",
+
+      "export CLUSTERED=no",
+      "export NODE_COUNT=${count.index}",
 
       "chmod +x /tmp/${var.provisioning_script}",
       "/bin/bash /tmp/${var.provisioning_script}",
@@ -468,9 +473,12 @@ resource "aws_instance" "looker-instance-cluster" {
       "export LOOKER_PASSWORD=${random_string.password.result}",
       "export HOST_URL=${self.public_dns}",
 
+      "export EXTERNAL_DB=yes",
       "export DB_SERVER=${aws_db_instance.looker-app-db[0].address}",
       "export DB_USER=looker",
       "export DB_PASSWORD=\"${random_string.password.result}\"",
+
+      "export CLUSTERED=yes",
       "export NODE_COUNT=${count.index}",
       "export SHARED_STORAGE_SERVER=${aws_efs_mount_target.efs-mount[0].dns_name}",
 
