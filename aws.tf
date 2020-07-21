@@ -96,6 +96,16 @@ resource "aws_security_group" "ingress-all-looker" {
     protocol = "tcp"
   }
 
+  # Looker NFS communication
+  ingress {
+    cidr_blocks = [
+      "10.0.0.0/16" # (private to subnet)
+    ]
+    from_port = 2049
+    to_port = 2049
+    protocol = "tcp"
+  }
+
   # MySQL
   ingress {
     cidr_blocks = [
@@ -283,9 +293,10 @@ resource "aws_efs_file_system" "looker-efs-fs" {
   count            = var.instances > 1 ? 1: 0
   creation_token   = "looker-efs-token"
   performance_mode = "generalPurpose"
-  encrypted        = "true"
+  encrypted        = "false"
   tags = {
     owner = var.tag_email
+    Name = "JCP EFS"
   }
 }
 
