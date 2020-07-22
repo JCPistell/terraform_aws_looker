@@ -538,7 +538,7 @@ data "aws_route53_zone" "zone" {
 }
 
 resource "aws_acm_certificate" "dev-cert" {
-  domain_name = "jcp-dev.${var.domain}"
+  domain_name = "${var.env}.${var.domain}"
   validation_method = "DNS"
   tags = {
     owner = var.tag_email
@@ -610,7 +610,7 @@ resource "aws_elb" "dev-looker-elb" {
 
 resource "aws_route53_record" "dev-looker-dns" {
   zone_id = data.aws_route53_zone.zone.zone_id
-  name = "jcp-dev.lookersandbox.com"
+  name = "${var.env}.${var.domain}"
   type = "A"
 
   alias {

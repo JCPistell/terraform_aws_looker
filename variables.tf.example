@@ -13,37 +13,41 @@ variable "tag_email" {
 }
 
 variable "aws_region" {
-    default = "us-east-1"
+  default = "us-east-1"
 }
 
 variable "external_db" {
-    default = 1
+  default = 1
 }
 
 variable "db_instance_type" {
-    default = "db.t2.medium"
+  default = "db.t2.medium"
 }
 
 variable "final_snapshot_skip" {
-    default = "true"
+  default = "true"
 }
 
 variable "instances" {
-    default = 1
+  default = 1
 }
 
 variable "ec2_instance_type" {
-    default = "t2.large"
+  default = "t2.large"
 }
 
 variable "provisioning_script" {
-    default = "setup.sh"
+  default = "setup.sh"
 }
 
 variable "key" {
-    default = "your_ssh_key"
+  default = "your_ssh_key"
 }
 
 variable "domain" {
-    default = "yourdomain.com"
+  default = "yourdomain.com"
+}
+
+variable "env" {
+  default = "mydev"
 }
