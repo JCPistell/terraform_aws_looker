@@ -2,3 +2,7 @@
 *.tfstate.backup
 .terraform/
 variables.tf
+db.p
+*.p
+looker.ini
+output.json

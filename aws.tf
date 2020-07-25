@@ -265,7 +265,7 @@ resource "aws_db_instance" "looker-app-db" {
   instance_class       = var.db_instance_type
   name                 = "looker"
   username             = "looker"
-  password             = random_string.password.result
+  password             = "abc_${random_string.password.result}"
   db_subnet_group_name   = aws_db_subnet_group.subnet-group-looker[0].name
   parameter_group_name = aws_db_parameter_group.looker_db_parameters[0].name
   vpc_security_group_ids = ["${aws_security_group.ingress-all-looker.id}"]
@@ -360,7 +360,7 @@ resource "aws_instance" "looker-instance" {
 
       "export LOOKER_LICENSE_KEY=${var.looker_license_key}",
       "export LOOKER_TECHNICAL_CONTACT_EMAIL=${var.technical_contact_email}",
-      "export LOOKER_PASSWORD=${random_string.password.result}",
+      "export LOOKER_PASSWORD=abc_${random_string.password.result}",
       "export HOST_URL=${self.public_dns}",
 
       "export EXTERNAL_DB=no",
@@ -419,13 +419,13 @@ resource "aws_instance" "looker-instance-mysql" {
 
       "export LOOKER_LICENSE_KEY=${var.looker_license_key}",
       "export LOOKER_TECHNICAL_CONTACT_EMAIL=${var.technical_contact_email}",
-      "export LOOKER_PASSWORD=${random_string.password.result}",
+      "export LOOKER_PASSWORD=abc_${random_string.password.result}",
       "export HOST_URL=${self.public_dns}",
 
       "export EXTERNAL_DB=yes",
       "export DB_SERVER=${aws_db_instance.looker-app-db[0].address}",
       "export DB_USER=looker",
-      "export DB_PASSWORD=\"${random_string.password.result}\"",
+      "export DB_PASSWORD=\"abc_${random_string.password.result}\"",
 
       "export CLUSTERED=no",
       "export NODE_COUNT=${count.index}",
@@ -481,13 +481,13 @@ resource "aws_instance" "looker-instance-cluster" {
 
       "export LOOKER_LICENSE_KEY=${var.looker_license_key}",
       "export LOOKER_TECHNICAL_CONTACT_EMAIL=${var.technical_contact_email}",
-      "export LOOKER_PASSWORD=${random_string.password.result}",
+      "export LOOKER_PASSWORD=abc_${random_string.password.result}",
       "export HOST_URL=${self.public_dns}",
 
       "export EXTERNAL_DB=yes",
       "export DB_SERVER=${aws_db_instance.looker-app-db[0].address}",
       "export DB_USER=looker",
-      "export DB_PASSWORD=\"${random_string.password.result}\"",
+      "export DB_PASSWORD=\"abc_${random_string.password.result}\"",
 
       "export CLUSTERED=yes",
       "export NODE_COUNT=${count.index}",
@@ -631,6 +631,26 @@ resource "random_string" "password" {
   override_special = "#%^*-="
 }
 
-output "Details" {
-  value = "\n\nLooker password is ${random_string.password.result}\n\nYou will need to wait a few minutes for the instances to become available.\n\n"
+output "user" {
+  value = var.technical_contact_email
+}
+
+output "pass" {
+  value = "abc_${random_string.password.result}"
+}
+
+output "host_url" {
+  value = "https://${var.env}.${var.domain}"
+}
+
+output "node_public_dns" {
+  value = aws_eip.ip-looker-env.*.public_dns
+}
+
+output "nfs_flag" {
+  value = var.instances > 1 ? 1 : 0
+}
+
+output "key" {
+  value = var.key
 }
